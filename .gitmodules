@@ -1,0 +1,3 @@
+[submodule "bw_image/external/stb"]
+	path = bw_image/external/stb
+	url = https://github.com/nothings/stb.git
