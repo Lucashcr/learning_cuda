@@ -12,11 +12,12 @@
     }                                                                          \
   } while (0)
 
-__global__ void multiplyKernel(int *d_A, int *d_B, int *d_C) {
-  int matSize = blockDim.x;
-
-  int ci = blockIdx.x;
-  int cj = threadIdx.x;
+__global__ void multiplyKernel(int matSize, int *d_A, int *d_B, int *d_C) {
+  int ci = blockIdx.x * blockDim.x + threadIdx.x;
+  int cj = blockIdx.y * blockDim.y + threadIdx.y;
+  if (ci >= matSize || cj >= matSize) {
+    return;
+  }
 
   for (int step = 0; step < matSize; step++) {
     int aIdx = ci * matSize + step;
@@ -57,9 +58,10 @@ int main(int argc, char **argv) {
   CUDA_CHECK(cudaMalloc(&d_C, bytes));
   CUDA_CHECK(cudaMemset(d_C, 0, bytes));
 
-  dim3 block(MAT_SIZE);
-  dim3 grid(MAT_SIZE);
-  multiplyKernel<<<grid, block>>>(d_A, d_B, d_C);
+  dim3 block(16, 16);
+  dim3 grid((MAT_SIZE + block.x - 1) / block.x,
+            (MAT_SIZE + block.y - 1) / block.y);
+  multiplyKernel<<<grid, block>>>(MAT_SIZE, d_A, d_B, d_C);
   CUDA_CHECK(cudaGetLastError());
   CUDA_CHECK(cudaDeviceSynchronize());
 
